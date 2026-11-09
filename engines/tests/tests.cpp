@@ -53,11 +53,52 @@ Common::String TestsEngine::getGameId() const {
 	return _gameDescription->gameId;
 }
 
+int TestsEngine::parse_tilemap_file(Common::String s, int matrix[3][5]) {
+	static const int rows = 3, columns = 5; // Just for testing
+
+	const char *str = s.c_str();
+
+	const char *p = str;
+	char *end;
+	int i, j;
+
+	for (i = 0; i < rows; ++i) {
+		for (j = 0; j < columns; ++j) {
+			int64 value;
+
+			while (Common::isSpace((byte)*p))
+				++p;
+
+			if (*p == '\0')
+				return 0;
+
+			errno = 0;
+			value = strtol(p, &end, 10);
+
+			if (p == end)
+				return 0;
+
+			matrix[i][j] = (int)value;
+			p = end;
+		}
+	}
+
+	while (Common::isSpace((unsigned char)*p))
+		++p;
+
+	return (*p == '\0');
+}
+
 Common::Error TestsEngine::run() {
 	// Initiating the config file
 	Common::File configFile;
 	if (!configFile.open("tests.conf"))
 		error("Unable to load config file \"tests.conf\"");
+
+	// Initiating the tilemap
+	Common::File level1_tilemap;
+	if (!level1_tilemap.open("level1.dat"))
+		error("Unable to load tilemap for level 1 (level1.dat)");
 
 	Common::String dimsRaw = configFile.readLine();
 
@@ -82,28 +123,63 @@ Common::Error TestsEngine::run() {
 	if (saveSlot != -1)
 		(void)loadGameState(saveSlot);
 
-	// Draw a series of boxes on screen as a sample
-	for (int i = 0; i < 100; ++i)
-		_screen->frameRect(Common::Rect(i, i, width - i, height - i), i);
-	_screen->update();
+	Common::String s = level1_tilemap.readString();
+	int tilemap[3][5];
+
+	parse_tilemap_file(s, tilemap);
 
 	// Simple event handling loop
 	byte pal[256 * 3] = {0};
 	Common::Event e;
-	int offset = 0;
+
+	// black
+	// red
+	pal[1 * 3 + 0] = 255;
+	// green
+	pal[2 * 3 + 1] = 255;
+	// blue
+	pal[3 * 3 + 2] = 255;
+
+	_screen->setPalette(pal, 0, 256);
 
 	Graphics::FrameLimiter limiter(g_system, 60);
 	while (!shouldQuit()) {
 		while (g_system->getEventManager()->pollEvent(e)) {
+			// Handle events.
 		}
 
-		// Cycle through a simple palette
-		++offset;
-		for (int i = 0; i < 256; ++i)
-			pal[i * 3 + 1] = (i + offset) % 256;
-		g_system->getPaletteManager()->setPalette(pal, 0, 256);
-		// Delay for a bit. All events loops should have a delay
-		// to prevent the system being unduly loaded
+		for (int row = 0; row < 3; ++row) {
+			for (int col = 0; col < 5; ++col) {
+				int type = tilemap[row][col];
+
+				uint32 color = 0;
+
+				switch (type) {
+				case 1:
+					color = 1;
+					break;
+				case 2:
+					color = 2;
+					break;
+				case 3:
+					color = 3;
+					break;
+				}
+
+				Common::Rect rect(
+					col * 64,
+					row * 67,
+					(col + 1) * 64,
+					(row + 1) * 67);
+
+				// Correct the last row to cover all 200 pixels.
+				if (row == 2)
+					rect.bottom = 200;
+
+				_screen->fillRect(rect, color);
+			}
+		}
+
 		limiter.delayBeforeSwap();
 		_screen->update();
 		limiter.startFrame();

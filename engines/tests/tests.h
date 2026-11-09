@@ -22,13 +22,13 @@
 #ifndef TESTS_H
 #define TESTS_H
 
-#include "common/scummsys.h"
-#include "common/system.h"
 #include "common/error.h"
 #include "common/fs.h"
 #include "common/hash-str.h"
 #include "common/random.h"
+#include "common/scummsys.h"
 #include "common/serializer.h"
+#include "common/system.h"
 #include "common/util.h"
 #include "engines/engine.h"
 #include "engines/savestate.h"
@@ -44,11 +44,16 @@ class TestsEngine : public Engine {
 private:
 	const ADGameDescription *_gameDescription;
 	Common::RandomSource _randomSource;
+
+	int parse_tilemap_file(Common::String s, int matrix[3][5]);
+
 protected:
 	// Engine APIs
 	Common::Error run() override;
+
 public:
 	Graphics::Screen *_screen = nullptr;
+
 public:
 	TestsEngine(OSystem *syst, const ADGameDescription *gameDesc);
 	~TestsEngine() override;
@@ -68,10 +73,9 @@ public:
 	}
 
 	bool hasFeature(EngineFeature f) const override {
-		return
-		    (f == kSupportsLoadingDuringRuntime) ||
-		    (f == kSupportsSavingDuringRuntime) ||
-		    (f == kSupportsReturnToLauncher);
+		return (f == kSupportsLoadingDuringRuntime) ||
+			   (f == kSupportsSavingDuringRuntime) ||
+			   (f == kSupportsReturnToLauncher);
 	};
 
 	bool canLoadGameStateCurrently(Common::U32String *msg = nullptr) override {
