@@ -142,11 +142,48 @@ Common::Error TestsEngine::run() {
 
 	_screen->setPalette(pal, 0, 256);
 
+	// Player
+	int x{}, y{}, spd{4}, player_width = 10, player_height = 10, player_color{0};
+
 	Graphics::FrameLimiter limiter(g_system, 60);
 	while (!shouldQuit()) {
 		while (g_system->getEventManager()->pollEvent(e)) {
-			// Handle events.
+			// Handle events
+			switch (e.type) {
+			case Common::EVENT_KEYDOWN:
+				switch (e.kbd.keycode) {
+				case Common::KEYCODE_UP:
+					y -= spd;
+					break;
+
+				case Common::KEYCODE_DOWN:
+					y += spd;
+					break;
+
+				case Common::KEYCODE_LEFT:
+					x -= spd;
+					break;
+
+				case Common::KEYCODE_RIGHT:
+					x += spd;
+					break;
+
+				case Common::KEYCODE_SPACE:
+					player_color = (player_color + 1) % 4;
+					break;
+
+				default:
+					break;
+				}
+				break;
+
+			default:
+				break;
+			}
 		}
+
+		x = CLIP(x, 0, width - player_width);
+		y = CLIP(y, 0, height - player_height);
 
 		for (int row = 0; row < 3; ++row) {
 			for (int col = 0; col < 5; ++col) {
@@ -172,13 +209,20 @@ Common::Error TestsEngine::run() {
 					(col + 1) * 64,
 					(row + 1) * 67);
 
-				// Correct the last row to cover all 200 pixels.
 				if (row == 2)
-					rect.bottom = 200;
+					rect.bottom = height;
 
 				_screen->fillRect(rect, color);
 			}
 		}
+
+		Common::Rect rect(
+			x,
+			y,
+			x + player_width,
+			y + player_height);
+
+		_screen->fillRect(rect, player_color);
 
 		limiter.delayBeforeSwap();
 		_screen->update();
